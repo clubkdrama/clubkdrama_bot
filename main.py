@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.3
+# Bot ClubKdrama Original 0.4
 import mysql.connector
 import os
 import urllib.parse
@@ -137,7 +137,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
                 inline_keyboard.append(row)
 
             if inline_keyboard:
-                await update.message.reply_text("", reply_markup=InlineKeyboardMarkup([inline_keyboard]))
+                await update.message.reply_text("Episodios Disponibles")
 
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         else:
