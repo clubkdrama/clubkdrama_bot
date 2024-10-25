@@ -1,4 +1,6 @@
-import mysql.connector, os
+import mysql.connector
+import os
+import urllib.parse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
@@ -8,17 +10,23 @@ load_dotenv()
 
 # Parámetros de configuración (usando variables de entorno para seguridad)
 TOKEN = os.getenv("TELEGRAM_TOKEN")  # Debes asegurarte de definir TELEGRAM_TOKEN en el entorno
-DB_PASSWORD = os.getenv("DB_PASSWORD")  # Asegúrate de definir DB_PASSWORD en el entorno
+DB_URL = os.getenv("MYSQL_URL")       # Asegúrate de definir MYSQL_URL en el entorno
 
 # Conectar a la base de datos MySQL
 def conectar_db():
     try:
-        return mysql.connector.connect(
-            host="autorack.proxy.rlwy.net",
-            user="root",
-            password=DB_PASSWORD,
-            database="railway",
+        # Descomponer la URL de conexión
+        url = os.getenv("MYSQL_URL")
+        result = urllib.parse.urlparse(url)
+
+        connection = mysql.connector.connect(
+            user=result.username,
+            password=result.password,
+            host=result.hostname,
+            port=result.port,
+            database=result.path[1:]  # Eliminar la barra inicial
         )
+        return connection
     except mysql.connector.Error as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
