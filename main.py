@@ -1,4 +1,4 @@
-# Bot ClubKdrama 1.0
+# Bot ClubKdrama 1.1
 import mysql.connector
 import os
 import urllib.parse
@@ -54,14 +54,15 @@ crear_tabla()
 # Función de inicio /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [KeyboardButton("Buscar Series"), KeyboardButton("Canal"), KeyboardButton("Chat")],
-        [KeyboardButton("Ayuda")]
+        [KeyboardButton("Buscar Series")],
+        [KeyboardButton("Canal"), KeyboardButton("Chat"), KeyboardButton("Ayuda")]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text("¡Bienvenido al bot de Club Kdrama! Elige una opción:", reply_markup=reply_markup)
 
 # Función para buscar series
 async def buscar_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Activar el estado de búsqueda y resetear estados previos
     context.user_data['buscando'] = True
     context.user_data['estado'] = None
     await update.message.reply_text("¿Qué serie quieres buscar? Por favor, ingresa el nombre o palabra clave.")
@@ -119,7 +120,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             title, cover, description, episode_links = serie[1], serie[2], serie[3], serie[4].split(',')
 
             await update.message.reply_text(title)
-            await context.bot.send_animation(chat_id=update.message.chat.id, animation=cover, caption=description)
+            await context.bot.send_photo(chat_id=update.message.chat.id, photo=cover, caption=description)
 
             # Crear botones inline para los episodios en filas de 3
             inline_keyboard = []
@@ -144,6 +145,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
 
 # Función para la ayuda
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Limpiar estados anteriores para evitar conflictos
     context.user_data['buscando'] = False
     context.user_data['estado'] = None
 
@@ -160,17 +162,22 @@ async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Función para el chat
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Limpiar estados anteriores para evitar conflictos
     context.user_data['buscando'] = False
     context.user_data['estado'] = None
+    await update.message.reply_text("Este es el chat de Club Kdrama. ¿En qué podemos ayudarte?")
 
 # Configuración del bot
 application = ApplicationBuilder().token(TOKEN).build()
+
+# Añadir manejadores
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
-application.add_handler(MessageHandler(filters.Regex('^\d+$'), mostrar_detalles_series))
 application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
 application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
+application.add_handler(MessageHandler(filters.Regex('^Canal$'), lambda update, context: update.message.reply_text("Este es el canal oficial de Club Kdrama.")))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
+application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\d+$'), mostrar_detalles_series))
 
 # Ejecutar el bot
 application.run_polling()
