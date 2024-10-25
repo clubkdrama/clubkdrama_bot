@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.4
+# Bot ClubKdrama Original 0.5
 import mysql.connector
 import os
 import urllib.parse
@@ -135,8 +135,8 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             # Agregar la última fila si contiene menos de 3 botones
             if row:
                 inline_keyboard.append(row)
-                
-            await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
+
+            await update.message.reply_text("Episodios disponibles:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
             
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         
