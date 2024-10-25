@@ -1,4 +1,4 @@
-python-telegram-bot==20.3  # O la versión más reciente compatible con tu código
-mysql-connector-python #conectar a mi Base de Datos MySLQ
+python-telegram-bot==20.0b1  # O la versión más reciente compatible con tu código
+mysql-connector-python
 python-dotenv  # Opcional, si decides usar .env
 certifi  # En caso de que tengas problemas de certificados
