@@ -17,7 +17,7 @@ def conectar_db():
             host="autorack.proxy.rlwy.net",
             user="root",
             password=DB_PASSWORD,
-            database="clubkdrama",
+            database="railway",
         )
     except mysql.connector.Error as e:
         print(f"Error al conectar a la base de datos: {e}")
