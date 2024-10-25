@@ -135,11 +135,11 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             # Agregar la última fila si contiene menos de 3 botones
             if row:
                 inline_keyboard.append(row)
-
-            if inline_keyboard:
-                await update.message.reply_text("Episodios Disponibles")
-
+                
+            await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
+        
         else:
             await update.message.reply_text("Número no válido. Por favor, ingresa un número de la lista.")
     else:
