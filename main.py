@@ -128,7 +128,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             inline_keyboard = []
             row = []
             for idx, link in enumerate(episode_links):
-                row.append(InlineKeyboardButton(f"Episodio {idx + 1}", url=link))
+                row.append(InlineKeyboardButton(f"EP{str(idx + 1).zfill(2)}", url=link))
                 if (idx + 1) % 3 == 0:  # Cada 3 botones, agregar una fila completa a inline_keyboard
                     inline_keyboard.append(row)
                     row = []  # Reiniciar fila para la siguiente
