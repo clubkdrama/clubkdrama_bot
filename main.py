@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.1
+# Bot ClubKdrama Original 0.2
 import mysql.connector
 import os
 import urllib.parse
@@ -126,11 +126,15 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
 
             # Crear botones inline para los episodios en filas de 3
             inline_keyboard = []
+            row = []
             for idx, link in enumerate(episode_links):
-                inline_keyboard.append(InlineKeyboardButton(f"Episodio {idx + 1}", url=link))
-                if (idx + 1) % 3 == 0:  # Limitar a 3 botones por fila
-                    await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup([inline_keyboard.copy()]))
-                    inline_keyboard.clear()
+                row.append(InlineKeyboardButton(f"Episodio {idx + 1}", url=link))
+                if (idx + 1) % 3 == 0:  # Cada 3 botones, agregar una fila completa a inline_keyboard
+                    inline_keyboard.append(row)
+                    row = []  # Reiniciar fila para la siguiente
+            # Agregar la última fila si contiene menos de 3 botones
+            if row:
+                inline_keyboard.append(row)
 
             if inline_keyboard:
                 await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup([inline_keyboard]))
