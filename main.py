@@ -1,4 +1,6 @@
-import mysql.connector, os
+import mysql.connector
+import os
+import urllib.parse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
@@ -8,17 +10,23 @@ load_dotenv()
 
 # Parámetros de configuración (usando variables de entorno para seguridad)
 TOKEN = os.getenv("TELEGRAM_TOKEN")  # Debes asegurarte de definir TELEGRAM_TOKEN en el entorno
-DB_PASSWORD = os.getenv("DB_PASSWORD")  # Asegúrate de definir DB_PASSWORD en el entorno
+DB_URL = os.getenv("MYSQL_URL")       # Asegúrate de definir MYSQL_URL en el entorno
 
 # Conectar a la base de datos MySQL
 def conectar_db():
     try:
-        return mysql.connector.connect(
-            host="autorack.proxy.rlwy.net",
-            user="root",
-            password=DB_PASSWORD,
-            database="railway",
+        # Descomponer la URL de conexión
+        url = os.getenv("MYSQL_URL")
+        result = urllib.parse.urlparse(url)
+
+        connection = mysql.connector.connect(
+            user=result.username,
+            password=result.password,
+            host=result.hostname,
+            port=result.port,
+            database=result.path[1:]  # Eliminar la barra inicial
         )
+        return connection
     except mysql.connector.Error as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
@@ -117,14 +125,20 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
 
             # Crear botones inline para los episodios en filas de 3
             inline_keyboard = []
-            for idx, link in enumerate(episode_links):
-                inline_keyboard.append(InlineKeyboardButton(f"Episodio {idx + 1}", url=link))
-                if (idx + 1) % 3 == 0:  # Limitar a 3 botones por fila
-                    await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup([inline_keyboard.copy()]))
-                    inline_keyboard.clear()
+            row = []
 
-            if inline_keyboard:
-                await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup([inline_keyboard]))
+            for idx, link in enumerate(episode_links):
+                row.append(InlineKeyboardButton(f"Episodio {idx + 1}", url=link))
+                if (idx + 1) % 3 == 0:  # Cada 3 botones, agregar una fila completa a inline_keyboard
+                    inline_keyboard.append(row)
+                    row = []  # Reiniciar fila para la siguiente
+
+            # Agregar la última fila si contiene menos de 3 botones
+            if row:
+                inline_keyboard.append(row)
+
+            # Enviar el mensaje una única vez con todos los botones inline
+            await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
 
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         else:
@@ -149,35 +163,12 @@ async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(ayuda_texto)
 
-# Función para el chat
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Limpiar estados anteriores para evitar conflictos
-    context.user_data['buscando'] = False
-    context.user_data['estado'] = None
-
-    inline_keyboard = [[InlineKeyboardButton("Ir al Chat", url="https://t.me/+K-XVPDFhzkRhZDk5")]]
-    await update.message.reply_text("¡Bienvenido al chat de Club Kdrama!", reply_markup=InlineKeyboardMarkup(inline_keyboard))
-
-# Función para el canal
-async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Limpiar estados anteriores para evitar conflictos
-    context.user_data['buscando'] = False
-    context.user_data['estado'] = None
-
-    inline_keyboard = [[InlineKeyboardButton("Ir al Canal", url="https://t.me/clubkdrama")]]
-    await update.message.reply_text("¡Bienvenido al canal de Club Kdrama!", reply_markup=InlineKeyboardMarkup(inline_keyboard))
-
-# Configurar y ejecutar el bot
+# Configuración y ejecución del bot
 application = ApplicationBuilder().token(TOKEN).build()
-
-# Handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
-application.add_handler(MessageHandler(filters.Regex('^Canal$'), canal))
-application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
+application.add_handler(MessageHandler(filters.Regex('^\d+$'), mostrar_detalles_series))
 application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
-application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\d+$'), mostrar_detalles_series))  # Procesa selección numérica de serie
-application.add_handler(MessageHandler(filters.TEXT & ~filters.Regex(r'^\d+$'), recibir_busqueda))  # Procesa la búsqueda
 
-# Ejecutar el bot
 application.run_polling()
