@@ -107,7 +107,7 @@ async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Función que muestra los detalles de la serie seleccionada
 async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('estado') == 'seleccionando':
+    if context.user_data.get('estado') in ['seleccionando', 'seleccionando_emision']:
         numero_seleccionado = update.message.text.strip()
 
         if not numero_seleccionado.isdigit():
@@ -220,6 +220,7 @@ application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
 application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\d+$'), mostrar_detalles_series))  # Procesa selección numérica de serie
 application.add_handler(MessageHandler(filters.TEXT & ~filters.Regex(r'^\d+$'), recibir_busqueda))  # Procesa la búsqueda
 application.add_handler(CommandHandler("emision", buscar_series_emision)) # Añadir el manejador para el comando /emision
+application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
 
 
 # Ejecutar el bot
