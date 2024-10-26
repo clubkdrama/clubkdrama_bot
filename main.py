@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.7
+# Bot ClubKdrama Original 0.8
 import mysql.connector
 import os
 import urllib.parse
@@ -63,11 +63,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Función para buscar series
 async def buscar_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['buscando'] = True
-    context.user_data['estado'] = None
+    context.user_data['estado'] = 'buscando'
     await update.message.reply_text("¿Qué serie quieres buscar? Por favor, ingresa el nombre o palabra clave.")
 
 # Función para mostrar series en emisión
 async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['estado'] = 'en_emision'
     conn = conectar_db()
     if conn is None:
         await update.message.reply_text("No se pudo conectar a la base de datos. Intenta nuevamente más tarde.")
@@ -92,7 +93,7 @@ async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Función que recibe el término de búsqueda y consulta la base de datos
 async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('buscando'):
+    if context.user_data.get('estado') == 'buscando':
         query = update.message.text.strip()
         if len(query) < 4:
             await update.message.reply_text("Por favor, ingresa al menos 4 caracteres para buscar.")
@@ -161,32 +162,35 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
     else:
         await update.message.reply_text("No estás en modo de selección. Por favor, busca una serie primero.")
 
-# Función para la ayuda
+# Función para la ayuda y reinicio de estado al presionar botones específicos
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['buscando'] = False
-    context.user_data['estado'] = None
+    context.user_data.clear()  # Reinicia cualquier estado previo
 
     ayuda_texto = (
         "Instrucciones de uso:\n"
         "1. Presiona el botón 'Buscar Series' para buscar por nombre.\n"
         "2. Usa el botón 'En Emisión' para ver series en emisión.\n"
-        "3. Selecciona el número de la serie en la lista para ver detalles.\n"
-        "¡Disfruta del Club Kdrama!"
+        "3. Selecciona el número de la serie en la lista para ver detalles."
     )
     await update.message.reply_text(ayuda_texto)
 
-# Configuración del bot y sus manejadores
-def main():
-    application = ApplicationBuilder().token(TOKEN).build()
-    
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
-    application.add_handler(MessageHandler(filters.Regex('^En Emisión$'), series_en_emision))
-    application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
-    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^[0-9]+$'), mostrar_detalles_series))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.Regex('^[0-9]+$'), recibir_busqueda))
+async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("Aquí está el canal de Club Kdrama: [Enlace al canal]")
 
-    application.run_polling()
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("Únete al chat de Club Kdrama: [Enlace al chat]")
 
-if __name__ == "__main__":
-    main()
+# Configuración y ejecución del bot
+application = ApplicationBuilder().token(TOKEN).build()
+
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.Regex("^Buscar Series$"), buscar_series))
+application.add_handler(MessageHandler(filters.Regex("^En Emisión$"), series_en_emision))
+application.add_handler(MessageHandler(filters.Regex("^Ayuda$"), ayuda))
+application.add_handler(MessageHandler(filters.Regex("^Canal$"), canal))
+application.add_handler(MessageHandler(filters.Regex("^Chat$"), chat))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mostrar_detalles_series))
+
+application.run_polling()
