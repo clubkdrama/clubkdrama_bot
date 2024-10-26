@@ -146,6 +146,33 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
     else:
         await update.message.reply_text("No estás en modo de selección. Por favor, busca una serie primero.")
 
+# Función para buscar series en emisión
+async def buscar_series_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Buscando series en emisión...")
+
+    conn = conectar_db()
+    if conn is None:
+        await update.message.reply_text("No se pudo conectar a la base de datos. Intenta nuevamente más tarde.")
+        return
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM series WHERE estado = 'emision'")  # Cambia aquí para usar el campo estado
+    resultados = cursor.fetchall()
+    conn.close()
+
+    if not resultados:
+        await update.message.reply_text("No hay series en emisión en este momento.")
+        return
+
+    # Mostrar resultados numerados
+    respuesta = "Series en emisión:\n"
+    for idx, serie in enumerate(resultados, 1):
+        respuesta += f"{idx}. {serie[1]}\n"  # Solo se muestra el título
+
+    await update.message.reply_text(respuesta + "\nPor favor, ingresa el número correspondiente a la serie que deseas ver.")
+    context.user_data['resultados'] = resultados  # Guardar resultados para usarlos más tarde
+    context.user_data['estado'] = 'seleccionando_emision'  # Cambiar estado a seleccionando
+
 # Función para la ayuda
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Limpiar estados anteriores para evitar conflictos
@@ -192,6 +219,8 @@ application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
 application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
 application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\d+$'), mostrar_detalles_series))  # Procesa selección numérica de serie
 application.add_handler(MessageHandler(filters.TEXT & ~filters.Regex(r'^\d+$'), recibir_busqueda))  # Procesa la búsqueda
+application.add_handler(CommandHandler("emision", buscar_series_emision)) # Añadir el manejador para el comando /emision
+
 
 # Ejecutar el bot
 application.run_polling()
