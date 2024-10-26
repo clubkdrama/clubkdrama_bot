@@ -190,4 +190,4 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mostrar_detalles_series))
 
 # Ejecutar el bot
-application.run_polling()
+application.run_polling(allowed_updates=Update.ALL_TYPES)
