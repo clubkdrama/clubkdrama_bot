@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.8
+# Bot ClubKdrama Original 0.3
 import mysql.connector
 import os
 import urllib.parse
@@ -62,7 +62,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Función para buscar series
 async def buscar_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['buscando'] = True
     context.user_data['estado'] = 'buscando'
     await update.message.reply_text("¿Qué serie quieres buscar? Por favor, ingresa el nombre o palabra clave.")
 
@@ -162,35 +161,40 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
     else:
         await update.message.reply_text("No estás en modo de selección. Por favor, busca una serie primero.")
 
-# Función para la ayuda y reinicio de estado al presionar botones específicos
-async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # Reinicia cualquier estado previo
+# Función para "Canal" que reinicia el estado anterior
+async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()  # Limpiar estados previos
+    await update.message.reply_text("Este es el canal oficial de Club Kdrama: [Enlace al canal](https://t.me/ClubKdrama)", parse_mode="Markdown")
 
+# Función para "Chat" que reinicia el estado anterior
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()  # Limpiar estados previos
+    await update.message.reply_text("Únete al chat de Club Kdrama: [Enlace al chat](https://t.me/ClubKdramaChat)", parse_mode="Markdown")
+
+# Función para la ayuda que reinicia el estado anterior
+async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()  # Limpiar estados previos
     ayuda_texto = (
         "Instrucciones de uso:\n"
-        "1. Presiona el botón 'Buscar Series' para buscar por nombre.\n"
-        "2. Usa el botón 'En Emisión' para ver series en emisión.\n"
-        "3. Selecciona el número de la serie en la lista para ver detalles."
+        "1. Presiona el botón 'Buscar Series'.\n"
+        "2. Ingresa el nombre de la serie que deseas buscar.\n"
+        "3. Espera mientras se realiza la búsqueda en la base de datos.\n"
+        "4. Selecciona un número de la lista de resultados para ver más detalles sobre la serie.\n"
+        "5. Recibirás información sobre la serie, su portada y episodios disponibles.\n"
+        "¡Disfruta del Club Kdrama!"
     )
     await update.message.reply_text(ayuda_texto)
 
-async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("Aquí está el canal de Club Kdrama: [Enlace al canal]")
-
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
-    await update.message.reply_text("Únete al chat de Club Kdrama: [Enlace al chat]")
-
-# Configuración y ejecución del bot
+# Crear y configurar la aplicación del bot
 application = ApplicationBuilder().token(TOKEN).build()
-
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.Regex("^Buscar Series$"), buscar_series))
-application.add_handler(MessageHandler(filters.Regex("^En Emisión$"), series_en_emision))
-application.add_handler(MessageHandler(filters.Regex("^Ayuda$"), ayuda))
-application.add_handler(MessageHandler(filters.Regex("^Canal$"), canal))
-application.add_handler(MessageHandler(filters.Regex("^Chat$"), chat))
+application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
+application.add_handler(MessageHandler(filters.Regex('^En Emisión$'), series_en_emision))
+application.add_handler(MessageHandler(filters.Regex('^Canal$'), canal))
+application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
+application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mostrar_detalles_series))
 
-application.run_polling()
+# Ejecutar el bot
+application.run_polling(allowed_updates=Update.ALL_TYPES)
