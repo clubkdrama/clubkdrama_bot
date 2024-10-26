@@ -137,7 +137,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             caption = f"{title}\n\n{description}"  # Agregar salto de línea para separación
 
             # Enviar la imagen con el título y la descripción
-            await context.bot.send_photo(chat_id=update.message.chat.id, photo=cover, caption=caption, reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            await context.bot.send_animation(chat_id=update.message.chat.id, animation=cover, caption=caption, reply_markup=InlineKeyboardMarkup(inline_keyboard))
 
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         
