@@ -136,7 +136,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             if row:
                 inline_keyboard.append(row)
 
-            await update.message.reply_text("Episodios disponibles:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            await update.message.reply_text("   Episodios disponibles   :", reply_markup=InlineKeyboardMarkup(inline_keyboard))
             
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         
