@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.5
+# Bot ClubKdrama Original 0.6
 import mysql.connector
 import os
 import urllib.parse
@@ -121,9 +121,6 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             serie = resultados[numero_seleccionado - 1]  # Ajustar índice para acceso a la lista
             title, cover, description, episode_links = serie[1], serie[2], serie[3], serie[4].split(',')
 
-            await update.message.reply_text(title)
-            await context.bot.send_animation(chat_id=update.message.chat.id, animation=cover, caption=description)
-
             # Crear botones inline para los episodios en filas de 3
             inline_keyboard = []
             row = []
@@ -136,8 +133,12 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             if row:
                 inline_keyboard.append(row)
 
-            await update.message.reply_text("   Episodios disponibles   :", reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            
+            # Combinar título y descripción en un solo pie de foto
+            caption = f"{title}\n\n{description}"  # Agregar salto de línea para separación
+
+            # Enviar la imagen con el título y la descripción
+            await context.bot.send_photo(chat_id=update.message.chat.id, photo=cover, caption=caption, reply_markup=InlineKeyboardMarkup(inline_keyboard))
+
             context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         
         else:
