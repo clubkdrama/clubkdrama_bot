@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.3
+# Bot ClubKdrama Original 0.4
 import mysql.connector
 import os
 import urllib.parse
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Cargar las variables de entorno desde el archivo .env
 load_dotenv()
 
-# Parámetros de configuración (usando variables de entorno para seguridad)
+# Parámetros de configuración
 TOKEN = os.getenv("TELEGRAM_TOKEN")  # Define TELEGRAM_TOKEN en el entorno
 DB_URL = os.getenv("MYSQL_URL")       # Define MYSQL_URL en el entorno
 
@@ -60,12 +60,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text("¡Bienvenido al bot de Club Kdrama! Elige una opción:", reply_markup=reply_markup)
 
-# Función para buscar series
+# Función para buscar series (mostrar en orden alfabético)
 async def buscar_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['estado'] = 'buscando'
     await update.message.reply_text("¿Qué serie quieres buscar? Por favor, ingresa el nombre o palabra clave.")
 
-# Función para mostrar series en emisión
+# Función para mostrar series en emisión (mostrar en orden alfabético)
 async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['estado'] = 'en_emision'
     conn = conectar_db()
@@ -74,7 +74,7 @@ async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM series WHERE estado = 'emision'")
+    cursor.execute("SELECT * FROM series WHERE estado = 'emision' ORDER BY title ASC")
     resultados = cursor.fetchall()
     conn.close()
 
@@ -82,7 +82,7 @@ async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No hay series en emisión actualmente.")
         return
 
-    respuesta = "Series en emisión:\n"
+    respuesta = "Series en emisión (ordenadas alfabéticamente):\n"
     for idx, serie in enumerate(resultados, 1):
         respuesta += f"{idx}. {serie[1]}\n"
 
@@ -90,7 +90,7 @@ async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['resultados'] = resultados
     context.user_data['estado'] = 'seleccionando_emision'
 
-# Función que recibe el término de búsqueda y consulta la base de datos
+# Función que recibe el término de búsqueda y consulta la base de datos (ordenada alfabéticamente)
 async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('estado') == 'buscando':
         query = update.message.text.strip()
@@ -106,7 +106,7 @@ async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM series WHERE title LIKE %s LIMIT 9", ('%' + query + '%',))
+        cursor.execute("SELECT * FROM series WHERE title LIKE %s ORDER BY title ASC LIMIT 9", ('%' + query + '%',))
         resultados = cursor.fetchall()
         conn.close()
 
@@ -114,7 +114,7 @@ async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("No se encontraron resultados con los criterios de búsqueda ingresados.")
             return
 
-        respuesta = "Resultados encontrados:\n"
+        respuesta = "Resultados encontrados (ordenados alfabéticamente):\n"
         for idx, serie in enumerate(resultados, 1):
             respuesta += f"{idx}. {serie[1]}\n"
 
@@ -141,7 +141,7 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             title, cover, description, episode_links = serie[1], serie[2], serie[3], serie[4].split(',')
 
             await update.message.reply_text(title)
-            await context.bot.send_animation(chat_id=update.message.chat.id, animation=cover, caption=description)
+            await context.bot.send_photo(chat_id=update.message.chat.id, photo=cover, caption=description)
 
             inline_keyboard = []
             row = []
@@ -153,40 +153,33 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             if row:
                 inline_keyboard.append(row)
 
-            await update.message.reply_text("Episodios disponibles:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            
-            context.user_data['estado'] = None
+            await update.message.reply_text("Selecciona un episodio:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
         else:
-            await update.message.reply_text("Número no válido. Por favor, ingresa un número de la lista.")
+            await update.message.reply_text("Número fuera de rango. Intenta nuevamente.")
     else:
-        await update.message.reply_text("No estás en modo de selección. Por favor, busca una serie primero.")
+        await update.message.reply_text("Por favor, utiliza el botón 'Buscar Series' o 'En Emisión' para seleccionar una serie.")
 
-# Función para "Canal" que reinicia el estado anterior
+# Función para manejar el botón "Canal"
 async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # Limpiar estados previos
-    await update.message.reply_text("Este es el canal oficial de Club Kdrama: [Enlace al canal](https://t.me/ClubKdrama)", parse_mode="Markdown")
+    # URL de tu canal
+    canal_url = "https://t.me/tu_canal"
+    await update.message.reply_text(f"Visita nuestro canal aquí: {canal_url}")
 
-# Función para "Chat" que reinicia el estado anterior
+# Función para manejar el botón "Chat"
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # Limpiar estados previos
-    await update.message.reply_text("Únete al chat de Club Kdrama: [Enlace al chat](https://t.me/ClubKdramaChat)", parse_mode="Markdown")
+    # URL de tu chat
+    chat_url = "https://t.me/tu_chat"
+    await update.message.reply_text(f"Únete a nuestro chat aquí: {chat_url}")
 
-# Función para la ayuda que reinicia el estado anterior
+# Función para manejar el botón "Ayuda"
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()  # Limpiar estados previos
-    ayuda_texto = (
-        "Instrucciones de uso:\n"
-        "1. Presiona el botón 'Buscar Series'.\n"
-        "2. Ingresa el nombre de la serie que deseas buscar.\n"
-        "3. Espera mientras se realiza la búsqueda en la base de datos.\n"
-        "4. Selecciona un número de la lista de resultados para ver más detalles sobre la serie.\n"
-        "5. Recibirás información sobre la serie, su portada y episodios disponibles.\n"
-        "¡Disfruta del Club Kdrama!"
-    )
-    await update.message.reply_text(ayuda_texto)
+    ayuda_text = "Aquí tienes la ayuda que necesitas para usar el bot."
+    await update.message.reply_text(ayuda_text)
 
-# Crear y configurar la aplicación del bot
+# Inicializar la aplicación del bot
 application = ApplicationBuilder().token(TOKEN).build()
+
+# Agregar manejadores
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
 application.add_handler(MessageHandler(filters.Regex('^En Emisión$'), series_en_emision))
@@ -197,4 +190,4 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mostrar_detalles_series))
 
 # Ejecutar el bot
-application.run_polling(allowed_updates=Update.ALL_TYPES)
+application.run_polling()
