@@ -73,7 +73,7 @@ async def series_en_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn = conectar_db()
     if conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, title FROM series WHERE is_airing = TRUE ORDER BY title")
+            cursor.execute("SELECT id, title FROM series WHERE estado = TRUE ORDER BY title")
             series = cursor.fetchall()
         conn.close()
 
