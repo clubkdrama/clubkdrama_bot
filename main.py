@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.4
+# Bot ClubKdrama Original 0.1
 import mysql.connector
 import os
 import urllib.parse
@@ -161,33 +161,48 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
 
 # Función para manejar el botón "Canal"
 async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # URL de tu canal
-    canal_url = "https://t.me/tu_canal"
+    canal_url = "https://t.me/tu_canal"  # Reemplaza con tu URL de canal
     await update.message.reply_text(f"Visita nuestro canal aquí: {canal_url}")
 
 # Función para manejar el botón "Chat"
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # URL de tu chat
-    chat_url = "https://t.me/tu_chat"
+    chat_url = "https://t.me/tu_chat"  # Reemplaza con tu URL de chat
     await update.message.reply_text(f"Únete a nuestro chat aquí: {chat_url}")
 
 # Función para manejar el botón "Ayuda"
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    ayuda_text = "Aquí tienes la ayuda que necesitas para usar el bot."
-    await update.message.reply_text(ayuda_text)
+    ayuda_texto = (
+        "Aquí tienes algunas opciones:\n"
+        "- **Buscar Series:** Te permite buscar series en la base de datos.\n"
+        "- **En Emisión:** Te muestra las series que están actualmente en emisión.\n"
+        "- **Canal:** Te lleva a nuestro canal.\n"
+        "- **Chat:** Únete a nuestro chat.\n"
+        "Si tienes alguna pregunta, no dudes en preguntar."
+    )
+    await update.message.reply_text(ayuda_texto)
 
-# Inicializar la aplicación del bot
-application = ApplicationBuilder().token(TOKEN).build()
+# Función que se ejecuta cuando el usuario envía un mensaje
+async def manejar_mensajes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text in ["Buscar Series", "En Emisión"]:
+        context.user_data['estado'] = None  # Resetear estado
+    elif context.user_data.get('estado') in ['buscando', 'en_emision']:
+        if update.message.text in ["Canal", "Chat", "Ayuda"]:
+            context.user_data['estado'] = None  # Cancelar búsqueda y mostrar ayuda
 
-# Agregar manejadores
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
-application.add_handler(MessageHandler(filters.Regex('^En Emisión$'), series_en_emision))
-application.add_handler(MessageHandler(filters.Regex('^Canal$'), canal))
-application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
-application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mostrar_detalles_series))
+# Función principal para ejecutar el bot
+def main():
+    application = ApplicationBuilder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
+    application.add_handler(MessageHandler(filters.Regex('^En Emisión$'), series_en_emision))
+    application.add_handler(MessageHandler(filters.Regex('^Canal$'), canal))
+    application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
+    application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
+    application.add_handler(MessageHandler(filters.text & ~filters.Command("start"), manejar_mensajes))
+    
+    application.add_handler(MessageHandler(filters.text & ~filters.Command("start"), recibir
+
 
 # Ejecutar el bot
 application.run_polling(allowed_updates=Update.ALL_TYPES)
