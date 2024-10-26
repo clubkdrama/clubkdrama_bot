@@ -1,4 +1,4 @@
-# Bot ClubKdrama Original 0.5
+# Bot ClubKdrama Original 0.6
 import mysql.connector
 import os
 import urllib.parse
@@ -124,7 +124,6 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
             await update.message.reply_text(title)
             await context.bot.send_animation(chat_id=update.message.chat.id, animation=cover, caption=description)
 
-            # Crear botones inline para los episodios en filas de 3
             inline_keyboard = []
             row = []
             for idx, link in enumerate(episode_links):
@@ -132,13 +131,11 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
                 if (idx + 1) % 3 == 0:  # Cada 3 botones, agregar una fila completa a inline_keyboard
                     inline_keyboard.append(row)
                     row = []  # Reiniciar fila para la siguiente
-            # Agregar la última fila si contiene menos de 3 botones
+# Agregar la última fila si contiene menos de 3 botones
             if row:
                 inline_keyboard.append(row)
 
             await update.message.reply_text("Episodios disponibles:", reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            
-            context.user_data['estado'] = None  # Reiniciar el estado después de mostrar detalles
         
         else:
             await update.message.reply_text("Número no válido. Por favor, ingresa un número de la lista.")
