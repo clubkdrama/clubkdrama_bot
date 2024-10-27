@@ -86,7 +86,7 @@ async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM series WHERE title LIKE %s ORDER BY title ASC %s LIMIT 9", ('%' + query + '%',))
+        cursor.execute("SELECT * FROM series WHERE title LIKE %s ORDER BY title ASC LIMIT 9", ('%' + query + '%',))
         resultados = cursor.fetchall()
         conn.close()
 
