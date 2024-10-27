@@ -43,8 +43,7 @@ def crear_tabla():
                 title VARCHAR(255) NOT NULL,
                 image_url VARCHAR(255) NOT NULL,
                 description TEXT NOT NULL,
-                episode_links TEXT NOT NULL,
-                estado ENUM('emision', 'finalizada') NOT NULL  -- Añadida columna estado
+                episode_links TEXT NOT NULL
             )
             ''')
             conn.commit()
@@ -56,7 +55,7 @@ crear_tabla()
 # Función de inicio /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [KeyboardButton("Buscar Series"), KeyboardButton("Buscar Series en Emisión"), KeyboardButton("Canal"), KeyboardButton("Chat")],
+        [KeyboardButton("Buscar Series"), KeyboardButton("Canal"), KeyboardButton("Chat")],
         [KeyboardButton("Ayuda")]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -108,7 +107,7 @@ async def recibir_busqueda(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Función que muestra los detalles de la serie seleccionada
 async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('estado') in ['seleccionando', 'seleccionando_emision']:
+    if context.user_data.get('estado') == 'seleccionando':
         numero_seleccionado = update.message.text.strip()
 
         if not numero_seleccionado.isdigit():
@@ -147,40 +146,52 @@ async def mostrar_detalles_series(update: Update, context: ContextTypes.DEFAULT_
     else:
         await update.message.reply_text("No estás en modo de selección. Por favor, busca una serie primero.")
 
-# Función para buscar series en emisión
-async def buscar_series_emision(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Buscando series en emisión...")
+# Función para la ayuda
+async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Limpiar estados anteriores para evitar conflictos
+    context.user_data['buscando'] = False
+    context.user_data['estado'] = None
 
-    conn = conectar_db()
-    if conn is None:
-        await update.message.reply_text("No se pudo conectar a la base de datos. Intenta nuevamente más tarde.")
-        return
+    ayuda_texto = (
+        "Instrucciones de uso:\n"
+        "1. Presiona el botón 'Buscar Series'.\n"
+        "2. Ingresa el nombre de la serie que deseas buscar.\n"
+        "3. Espera mientras se realiza la búsqueda en la base de datos.\n"
+        "4. Selecciona un número de la lista de resultados para ver más detalles sobre la serie.\n"
+        "5. Recibirás información sobre la serie, su portada y episodios disponibles.\n"
+        "¡Disfruta del Club Kdrama!"
+    )
+    await update.message.reply_text(ayuda_texto)
 
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM series WHERE estado = 'emision'")  # Usar el campo estado
-    resultados = cursor.fetchall()
-    conn.close()
+# Función para el chat
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Limpiar estados anteriores para evitar conflictos
+    context.user_data['buscando'] = False
+    context.user_data['estado'] = None
 
-    if not resultados:
-        await update.message.reply_text("No hay series en emisión en este momento.")
-        return
+    inline_keyboard = [[InlineKeyboardButton("Ir al Chat", url="https://t.me/+K-XVPDFhzkRhZDk5")]]
+    await update.message.reply_text("¡Bienvenido al chat de Club Kdrama!", reply_markup=InlineKeyboardMarkup(inline_keyboard))
 
-    # Mostrar resultados numerados
-    respuesta = "Series en emisión:\n"
-    for idx, serie in enumerate(resultados, 1):
-        respuesta += f"{idx}. {serie[1]}\n"  # Solo se muestra el título
+# Función para el canal
+async def canal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Limpiar estados anteriores para evitar conflictos
+    context.user_data['buscando'] = False
+    context.user_data['estado'] = None
 
-    await update.message.reply_text(respuesta + "\nPor favor, ingresa el número correspondiente a la serie que deseas ver.")
-    context.user_data['resultados'] = resultados  # Guardar resultados para usarlos más tarde
-    context.user_data['estado'] = 'seleccionando_emision'  # Cambiar estado a seleccionando emision
+    inline_keyboard = [[InlineKeyboardButton("Ir al Canal", url="https://t.me/clubkdrama")]]
+    await update.message.reply_text("¡Bienvenido al canal de Club Kdrama!", reply_markup=InlineKeyboardMarkup(inline_keyboard))
 
-# Añadir manejadores
+# Configurar y ejecutar el bot
 application = ApplicationBuilder().token(TOKEN).build()
+
+# Handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.Regex('^Buscar Series$'), buscar_series))
-application.add_handler(MessageHandler(filters.Regex('^Buscar Series en Emisión$'), buscar_series_emision))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_busqueda))
-application.add_handler(MessageHandler(filters.Regex('^[0-9]+$'), mostrar_detalles_series))
+application.add_handler(MessageHandler(filters.Regex('^Canal$'), canal))
+application.add_handler(MessageHandler(filters.Regex('^Chat$'), chat))
+application.add_handler(MessageHandler(filters.Regex('^Ayuda$'), ayuda))
+application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\d+$'), mostrar_detalles_series))  # Procesa selección numérica de serie
+application.add_handler(MessageHandler(filters.TEXT & ~filters.Regex(r'^\d+$'), recibir_busqueda))  # Procesa la búsqueda
 
 # Ejecutar el bot
 application.run_polling()
